@@ -383,8 +383,6 @@
 
   <h2>What we learned</h2>
 
-  <p><ins>A few things held up across every iteration.</ins></p>
-
   <p><strong>Separate execution from grading</strong><del> -</del><ins>.</ins> Self-grading inflated our scores by <del>60pp</del><ins>60 percentage points</ins>. <del>The executor gets the task prompt and nothing else, a separate grader checks the output.</del><ins>Once the executor got only the task prompt and a separate grader read the output, the numbers became much more believable.</ins></p>
 
   <p><strong>Clean your context for baseline runs</strong><del> -</del><ins>.</ins> If your repo references the skills anywhere (docs, indexes, <del>AGENTS.md</del><ins><code>AGENTS.md</code></ins>), strip those from the baseline. Our <del>AGENTS.md</del><ins><code>AGENTS.md</code></ins> had a skills index listing skill names and one-line descriptions, and even that was enough to nudge the without-skill agents toward the right tools and patterns.</p>

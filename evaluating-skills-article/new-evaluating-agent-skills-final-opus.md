@@ -211,8 +211,6 @@ You can automate the eval runs, but the question of "what should we even be test
 
 ## What we learned
 
-A few things held up across every iteration.
-
 **Separate execution from grading.** Self-grading inflated our scores by 60 percentage points. Once the executor got only the task prompt and a separate grader read the output, the numbers became much more believable.
 
 **Clean your context for baseline runs.** If your repo references the skills anywhere (docs, indexes, `AGENTS.md`), strip those from the baseline. Our `AGENTS.md` had a skills index listing skill names and one-line descriptions, and even that was enough to nudge the without-skill agents toward the right tools and patterns.
