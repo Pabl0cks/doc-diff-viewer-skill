@@ -5,6 +5,8 @@ final/edited) and generates a single self-contained HTML "track changes"
 viewer: word-level inline diffs with deletions in red strikethrough and
 additions in green, plus a **Track changes / Original / Final** view toggle.
 
+**[▶ Live demo](https://pabl0cks.github.io/doc-diff-viewer-skill/evaluating-skills-article/article-changes-evaluating-agents.html)** — the generated viewer for the example article below.
+
 ## Contents
 
 - [`doc-diff-viewer/SKILL.md`](doc-diff-viewer/SKILL.md) — the skill. To install it for all
