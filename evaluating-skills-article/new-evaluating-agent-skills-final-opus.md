@@ -81,7 +81,7 @@ We ran one round per configuration. 4 skills (drizzle, x402, ponder, eip-5792), 
 
 Ponder was similar. Without the skill, Claude imported from `@ponder/core` (the old package name) instead of `ponder`, used `createSchema` instead of `onchainTable`, and missed the SE-2 bridge entirely: no reading from `deployedContracts.ts`, no `scaffoldConfig` for network info, no `ponder-env.d.ts` for TypeScript types. It built a working Ponder setup for Ponder v0.5, not v0.7.
 
-Good signal, but n=1 per config. Not enough to trust.
+The result was useful, but one run per configuration is not enough to trust the pattern yet.
 
 ## Iteration 2: self-grading failure
 
@@ -106,7 +106,7 @@ A 60 percentage point jump, and the only variable that changed was the grading m
 
 **Self-grading is generous.** An agent that wrote `const NETWORK = process.env.X402_NETWORK || 'eip155:84532'` marks itself PASS on the CAIP-2 assertion because it *intended* to satisfy it. A separate grader that just reads the code doesn't care about intent. It checks whether the implementation actually works. The executor gives itself credit for trying.
 
-There was also a subtler leak. Our `AGENTS.md` file (always in context) had a Skills & Agents Index listing skill names and one-line descriptions. Even the without_skill agents could see "`drizzle-neon` - Drizzle ORM, Neon PostgreSQL, database integration" sitting right there. Not the full skill, but a hint. Enough to nudge things.
+There was also a subtler leak. The `AGENTS.md` file (always in context) had a Skills & Agents Index listing skill names and one-line descriptions. Even the without_skill agents could see "`drizzle-neon` - Drizzle ORM, Neon PostgreSQL, database integration" sitting right there. That hint was enough to give the no-skill agents some direction, so the baseline was not completely clean.
 
 The time and token data was still useful though, since grading bias doesn't affect those:
 

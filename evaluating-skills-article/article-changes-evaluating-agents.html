@@ -242,7 +242,7 @@
 
   <p>Ponder was similar. Without the skill, Claude imported from <code>@ponder/core</code> (the old package name) instead of <code>ponder</code>, used <code>createSchema</code> instead of <code>onchainTable</code>, and missed the SE-2 bridge entirely: no reading from <code>deployedContracts.ts</code>, no <code>scaffoldConfig</code> for network info, no <code>ponder-env.d.ts</code> for TypeScript types. It built a working Ponder setup for Ponder v0.5, not v0.7.</p>
 
-  <p>Good signal, but n=1 per config. Not enough to trust.</p>
+  <p><del>Good signal, but n=1 per config. Not enough to trust.</del><ins>The result was useful, but one run per configuration is not enough to trust the pattern yet.</ins></p>
 
   <h2>Iteration 2: self-grading failure</h2>
 
@@ -268,7 +268,7 @@
 
   <p><strong>Self-grading is generous.</strong> An agent that wrote <code>const NETWORK = process.env.X402_NETWORK || 'eip155:84532'</code> marks itself PASS on the CAIP-2 assertion because it <em>intended</em> to satisfy it. A separate grader that just reads the code doesn't care about intent. It checks whether the implementation actually works. The executor gives itself credit for trying.</p>
 
-  <p>There was also a subtler leak. Our <code>AGENTS.md</code> file (always in context) had a Skills &amp; Agents Index listing skill names and one-line descriptions. Even the without_skill agents could see "<code>drizzle-neon</code> - Drizzle ORM, Neon PostgreSQL, database integration" sitting right there. Not the full skill, but a hint. Enough to nudge things.</p>
+  <p>There was also a subtler leak. <del>Our</del><ins>The</ins> <code>AGENTS.md</code> file (always in context) had a Skills &amp; Agents Index listing skill names and one-line descriptions. Even the without_skill agents could see "<code>drizzle-neon</code> - Drizzle ORM, Neon PostgreSQL, database integration" sitting right there. <del>Not the full skill, but a hint. Enough to nudge things.</del><ins>That hint was enough to give the no-skill agents some direction, so the baseline was not completely clean.</ins></p>
 
   <p>The time and token data was still useful though, since grading bias doesn't affect those:</p>
 
