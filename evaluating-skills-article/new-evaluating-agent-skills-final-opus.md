@@ -3,7 +3,7 @@
 > How we replaced Scaffold-ETH 2's template extensions with agent skills, ran 92 A/B evals to measure capability uplift, and why self-grading inflated our scores by 60 points."
 
 
-Recently we started migrating Scaffold-ETH 2's template-based extension system to markdown skill files. To measure the capability uplift, we used claude codes A/B eval pipeline and to run 92 evaluations across our 11 skills with an A/B eval pipeline.
+Recently we started migrating Scaffold-ETH 2's template-based extension system to markdown skill files. To measure the capability uplift, we used claude codes A/B eval pipeline to run 92 evaluations across our 11 skills.
 
 Here's how we separated real capability from baseline model knowledge, cut down context pollution, and found out that letting agents grade themselves inflated our success numbers by 60 percentage points.
 
