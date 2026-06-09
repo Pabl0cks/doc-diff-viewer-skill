@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Change Review — Evaluating agents skills</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    color: #37352f;
+    background: #fbfbfa;
+    margin: 0;
+    padding: 40px 20px 120px;
+  }
+  .container { max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 2em; line-height: 1.25; margin: 0.4em 0; }
+  h2 { font-size: 1.45em; margin-top: 1.8em; border-bottom: 1px solid #e9e7e2; padding-bottom: 6px; }
+  h3 { font-size: 1.15em; margin-top: 1.5em; }
+  blockquote {
+    border-left: 3px solid #37352f;
+    margin: 1em 0;
+    padding: 4px 16px;
+    color: #6b6960;
+    font-style: italic;
+  }
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    background: #f1f0ec;
+    color: #c0392b;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.88em;
+  }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.2em 0;
+    font-size: 0.92em;
+  }
+  th, td { border: 1px solid #e0ded8; padding: 7px 11px; text-align: left; }
+  th { background: #f4f3ef; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafaf8; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #fbfbfa;
+    border-bottom: 1px solid #e9e7e2;
+    padding: 12px 4px;
+    margin-bottom: 28px;
+    font-size: 0.85em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+  }
+  .toolbar .views { display: flex; gap: 6px; }
+  .toolbar button {
+    font: inherit;
+    padding: 4px 14px;
+    border: 1px solid #d9d6cf;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #57544c;
+  }
+  .toolbar button:hover { background: #f4f3ef; }
+  .toolbar button.active {
+    background: #37352f;
+    color: #fff;
+    border-color: #37352f;
+  }
+  .toolbar .chip { padding: 1px 8px; border-radius: 4px; font-weight: 500; }
+  .chip-del { background: #ffe3e3; color: #c92a2a; text-decoration: line-through; }
+  .chip-ins { background: #d3f9d8; color: #2b8a3e; }
+  .toolbar .hint { color: #908d85; margin-left: auto; }
+  body.view-original .legend-redline, body.view-final .legend-redline { visibility: hidden; }
+
+  /* ---------- Track changes marks ---------- */
+  .container del {
+    background: #ffe3e3;
+    color: #c92a2a;
+    text-decoration: line-through;
+    text-decoration-color: #e03131;
+    text-decoration-thickness: 1.5px;
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+  .container del code, .container del a { color: #c92a2a; }
+  .container del code { background: #ffd6d6; }
+  .container ins {
+    background: #d3f9d8;
+    color: #1d6b32;
+    text-decoration: none;
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+  .container ins code { background: #b9ecc4; color: #1d6b32; }
+  .container ins a { color: #1d6b32; text-decoration: underline; }
+
+  /* Deleted image embeds shown as a block */
+  del.img-del {
+    display: block;
+    font-family: monospace;
+    font-size: 0.85em;
+    padding: 8px 12px;
+    margin: 1em 0;
+  }
+
+  /* Paragraph-break marker: only meaningful in redline view */
+  ins.para-break {
+    font-weight: 700;
+    padding: 0 6px;
+  }
+
+  /* ---------- Original view: hide insertions, unstyle deletions ---------- */
+  body.view-original .container ins { display: none; }
+  body.view-original .container del {
+    background: none;
+    color: inherit;
+    text-decoration: none;
+    padding: 0;
+  }
+  body.view-original .container del code { background: #f1f0ec; color: #c0392b; }
+  body.view-original .container del a { color: #2563eb; }
+  body.view-original del.img-del { padding: 0; margin: 1em 0; }
+
+  /* ---------- Final view: hide deletions, unstyle insertions ---------- */
+  body.view-final .container del { display: none; }
+  body.view-final .container ins {
+    background: none;
+    color: inherit;
+    padding: 0;
+  }
+  body.view-final .container ins code { background: #f1f0ec; color: #c0392b; }
+  body.view-final .container ins a { color: #2563eb; }
+  body.view-final ins.para-break { display: none; }
+  body.view-final .removed-when-final { display: none; }
+</style>
+</head>
+<body class="view-redline">
+<div class="toolbar">
+  <div class="views">
+    <button data-view="view-redline" class="active">Track changes</button>
+    <button data-view="view-original">Original</button>
+    <button data-view="view-final">Final</button>
+  </div>
+  <span class="legend-redline"><span class="chip chip-del">deleted</span> <span class="chip chip-ins">added</span></span>
+  <span class="hint">Red strikethrough = removed from the original · Green = what replaced it</span>
+</div>
+<div class="container">
+
+  <h1>Evaluating agents skills: testing whether they are actually useful</h1>
+
+  <blockquote><del>How we moved from template-based extensions to agent skills, ran 92 evaluations to measure them, and learned what makes a skill worth keeping</del><ins>How we replaced Scaffold-ETH 2's template extensions with agent skills, ran 92 A/B evals to measure capability uplift, and why self-grading inflated our scores by 60 points."</ins></blockquote>
+
+  <p>Recently<del>,</del> we started migrating Scaffold-ETH 2's template-based extension system <del>with</del><ins>to</ins> markdown skill files. To measure the capability uplift, we used claude codes A/B eval pipeline and <del>ran</del><ins>to run</ins> 92 evaluations across<ins> our 11 skills with an A/B eval pipeline</ins>. <ins class="para-break" title="paragraph break added here in the final version">¶</ins> <del>Here is</del><ins>Here's</ins> how we <del>isolated true</del><ins>separated real</ins> capability from baseline model knowledge, <del>mitigated</del><ins>cut down</ins> context pollution, and <del>discovered why self-evaluating agents artificially inflated our success metrics</del><ins>found out that letting agents grade themselves inflated our success numbers</ins> by 60 percentage points.</p>
+
+  <h2>How we got here</h2>
+
+  <p>Scaffold-ETH 2 had an <a href="https://scaffoldeth.io/extensions">extensions</a> system since mid-2024. You'd run <code>npx create-eth@latest -e ponder</code> and get a set of <a href="https://github.com/scaffold-eth/create-eth-extensions/blob/ponder/extension/packages/nextjs/components/Header.tsx.args.mjs"><code>.args.mjs</code></a> files, new files, and <code>package.json</code> patches stitched together at scaffold time. We had our own templating engine with <a href="https://github.com/scaffold-eth/create-eth/blob/ac2b0b7412a79d7abae0e801ba5a807e23be82e4/templates/base/packages/nextjs/components/ScaffoldEthAppWithProviders.tsx.template.mjs#L43"><code>.template.mjs</code></a> files and a merging pipeline. It worked, but you couldn't stack extensions, couldn't add them after scaffolding the app, and every time a library updated or we changed something in SE-2, we had to go back and make sure all the extensions still lined up with the new <del>code..</del><ins>code.</ins></p>
+
+  <p>In January we started <a href="https://github.com/scaffold-eth/scaffold-eth-2/pull/1227">building a skill</a> to let Claude add extensions to <del>existing scaffoled</del><ins>an existing scaffolded</ins> project, but we kept re-implementing the templating system inside a Claude <del>skill,</del><ins>skill:</ins> parsing <code>.args.mjs</code> files, handling merge conflicts, respecting the file-copying machinery. Then Carlos left a <a href="https://github.com/scaffold-eth/scaffold-eth-2/pull/1227#issuecomment-3871449762">comment</a> that made us step <del>back: maybe</del><ins>back. Maybe</ins> the future isn't "let Claude read and merge the template files." Maybe it's no template files at all, just well-crafted examples the model can look at and implement directly. We'd been in <a href="https://thedecisionlab.com/biases/the-sunk-cost-fallacy">sunk cost</a> territory, trying to preserve the templating system because we built it, not because we needed it. <del>Teach the agent what</del><ins>The move was to teach the agent only what</ins> it can't already know<del> and let it figure out</del><ins>, and let it work out</ins> the how.</p>
+
+  <h2>So what is a skill, really?</h2>
+
+  <p><del>A skill is a markdown file (<code>SKILL.md</code>) that teaches an AI agent how to do something specific in your codebase. Not a template, not a merge script, not step-by-step instructions. Just the knowledge the model is missing: project-specific patterns, the latest API versions, integration conventions that it can't know from training alone.</del><ins>A skill is a markdown file (<code>SKILL.md</code>) that teaches an agent how to do one specific thing in your codebase: the project-specific patterns, the current API versions, the integration conventions it can't get from training. It acts as a flat file that the agent loads into context, containing just the knowledge the model is missing without any executable merge scripts.</ins></p>
+
+  <p><del>Agent knows how to set up Ponder. It knows event indexing and GraphQL APIs.</del><ins>Take Ponder. The agent already knows how to set up event indexing and GraphQL APIs.</ins> What it doesn't know is that Ponder v0.7 <del>changed the package name</del><ins>renamed the package</ins> from <code>@ponder/core</code> to just <code>ponder</code>, swapped <code>createSchema</code> for <code>onchainTable</code>, and switched from Express-style handlers to Hono. It doesn't know that SE-2 needs the indexer config to read from <code>deployedContracts.ts</code> and <code>scaffoldConfig</code> for network info, or that the workspace should be named <code>@se-2/ponder</code>. A skill file fills in those blanks.</p>
+
+  <p>We <a href="https://github.com/scaffold-eth/scaffold-eth-2/pull/1232">migrated the create-eth extensions</a> into skill files. Instead of template files and merge scripts, each extension became a <del><a href="http://SKILL.md">SKILL.md</a></del><ins><code>SKILL.md</code></ins> that teaches the pattern. The Ponder extension (with its <code>.args.mjs</code> files, contract file templates, deployment scripts, frontend components, and package.json patches) became a <a href="https://github.com/scaffold-eth/create-eth/blob/main/templates/base/.agents/skills/ponder/SKILL.md">single markdown</a> document that explains how Ponder v0.7 works within an SE-2 monorepo: where to put the package, how to bridge the config, which workspace naming convention to follow.</p>
+
+  <p>We ended up with 11 skills covering x402 payment-gated APIs, Ponder event indexing, EIP-5792 batch transactions, Drizzle+Neon database setup, subgraph integration, ERC-20 and ERC-721 token patterns, SIWE authentication, Solidity security patterns and more. But we'd never actually measured whether any of this helps. We assumed it did because the output looked better when we used skills.</p>
+
+  <h2>Pre-eval classification</h2>
+
+  <p>Around this time we came across Anthropic's <a href="https://claude.com/blog/improving-skill-creator-test-measure-and-refine-agent-skills">skill creator article</a><del> which</del><ins>, which</ins> introduced a useful framework for thinking about what skills actually do. They break it into two categories:</p>
+
+  <ul>
+    <li><strong>Capability uplift</strong>: the model literally can't do this correctly without the skill. For us that's things like the x402 v2 API that didn't exist in training data, or SE-2's custom monorepo conventions that we invented. The model doesn't have this knowledge, so it guesses wrong.</li>
+    <li><strong>Encoded preference</strong>: the model could do something reasonable, the skill just ensures it does it your way. More like "use this specific folder structure" or "prefer this ORM over that one" where the model could make a fine choice on its own.</li>
+  </ul>
+
+  <p>Every skill is some mix of both. We went through all 11 and estimated the ratio before running any evals, because that ratio tells you how big the A/B delta should be. High capability uplift means the model will struggle without the skill. High encoded preference means it'll do fine, just maybe not exactly the way you'd want.</p>
+
+  <table>
+    <tr><th>Skill</th><th>Capability Uplift</th><th>Encoded Preference</th><th>Prediction</th></tr>
+    <tr><td>subgraph</td><td>75%</td><td>25%</td><td>Essential</td></tr>
+    <tr><td>x402</td><td>70%</td><td>30%</td><td>Essential</td></tr>
+    <tr><td>ponder</td><td>70%</td><td>30%</td><td>Essential</td></tr>
+    <tr><td>eip-5792</td><td>70%</td><td>30%</td><td>Essential</td></tr>
+    <tr><td>drizzle-neon</td><td>65%</td><td>35%</td><td>Essential</td></tr>
+    <tr><td>eip-712</td><td>60%</td><td>40%</td><td>Valuable</td></tr>
+    <tr><td>siwe</td><td>55%</td><td>45%</td><td>Valuable</td></tr>
+    <tr><td>erc-721</td><td>45%</td><td>55%</td><td>Useful</td></tr>
+    <tr><td>erc-20</td><td>40%</td><td>60%</td><td>Marginal</td></tr>
+    <tr><td>defi-protocol-templates</td><td>30%</td><td>70%</td><td>Marginal</td></tr>
+    <tr><td>solidity-security</td><td>25%</td><td>75%</td><td>Low value</td></tr>
+  </table>
+
+  <p><del>Integration heavy</del><ins>Integration-heavy</ins> skills at the top, knowledge-reference at the bottom.</p>
+
+  <h2>Evaluating skills: the setup</h2>
+
+  <del class="img-del removed-when-final">![image.png](image.png)</del>
+
+  <p>With the classification done, we needed to actually measure the capability uplift side. Does the model get things wrong without the skill that it gets right with the skill? Encoded preference is easier to <del>check since</del><ins>check, since</ins> you can just look at the output and see if it follows your documented process.</p>
+
+  <p>Capability uplift needs a proper A/B comparison: run with the skill, run without, and see what breaks. We built a testing pipeline for that.</p>
+
+  <p>For each skill, we wrote two prompts:</p>
+
+  <p><strong>With skill (Variant A):</strong> a natural task description plus instructions to read the <del><a href="http://SKILL.md">SKILL.md</a></del><ins><code>SKILL.md</code></ins> file. "Add x402 payment-gated API routes to my SE-2 dApp" plus the skill.</p>
+
+  <p><strong>Without skill (Variant B):</strong> the same task described naturally, but no mention of specific libraries or file paths. "I want to add payment-gated content to my dApp so users pay per API call." Just what a real user would ask.</p>
+
+  <p>Each variant gets 10 specific assertions to check against. Things like "uses v2 API with paymentProxy and x402ResourceServer" or "uses CAIP-2 network format (eip155:84532) not legacy chain names." Concrete, binary, checkable in the output code.</p>
+
+  <p>An independent grader agent reads only the output files and scores each assertion pass/fail. It never sees the executor's transcript or reasoning.</p>
+
+  <p>That's the setup we eventually landed on. Getting there took a few tries.</p>
+
+  <h2>Iteration 1: encouraging but small</h2>
+
+  <p>We ran one round per configuration. 4 skills (drizzle, x402, ponder, eip-5792), each tested with and without. 8 total runs, independently graded.</p>
+
+  <table>
+    <tr><th>Skill</th><th>With Skill</th><th>Without Skill</th><th>Delta</th></tr>
+    <tr><td>drizzle</td><td>10/10</td><td>0/10</td><td>+100pp</td></tr>
+    <tr><td>x402</td><td>10/10</td><td>5/10</td><td>+50pp</td></tr>
+    <tr><td>ponder</td><td>10/10</td><td>5/10</td><td>+50pp</td></tr>
+    <tr><td>eip-5792</td><td>10/10</td><td>6/10</td><td>+40pp</td></tr>
+  </table>
+
+  <p>100% with skills, 40% without. The x402 result told a clear story: Claude hallucinated API shapes that don't exist. It reached for <code>x402-fetch</code> and <code>x402-next</code> (v1-style unscoped packages) when the real API uses <code>@x402/core</code>, <code>@x402/evm</code>, <code>@x402/next</code>. It missed <code>registerExactEvmScheme</code>, the CAIP-2 network format, the entire paywall setup with <code>createPaywall</code> and <code>evmPaywall</code>. The library is new enough that Claude's training data has the wrong version, so it confidently writes code against an API that no longer exists.</p>
+
+  <p>Ponder was similar. Without the skill, Claude imported from <code>@ponder/core</code> (the old package name) instead of <code>ponder</code>, used <code>createSchema</code> instead of <code>onchainTable</code>, and missed the SE-2 bridge entirely: no reading from <code>deployedContracts.ts</code>, no <code>scaffoldConfig</code> for network info, no <code>ponder-env.d.ts</code> for TypeScript types. It built a working Ponder setup for Ponder v0.5, not v0.7.</p>
+
+  <p>Good signal, but n=1 per config. Not enough to trust.</p>
+
+  <h2>Iteration 2: self-grading failure</h2>
+
+  <p>We scaled to 3 runs per configuration, 24 total. To save time, we let the executor agent grade its own work. One agent implements the solution, checks the assertions, reports scores.</p>
+
+  <p>The <strong>with_skill</strong> results came back at 100%, which was expected. Then <strong>without_skill</strong> also came back at 100%. Drizzle went from 0/10 to 10/10. x402 from 5/10 to 10/10. Every skill, every run, perfect scores. According to this data, our skills made zero difference.</p>
+
+  <p>We still had the run-1 data from iteration 1 (independently graded). Here's the comparison:</p>
+
+  <table>
+    <tr><th>Skill (without_skill)</th><th>Run-1 (independent)</th><th>Run-2 (self-graded)</th><th>Run-3 (self-graded)</th></tr>
+    <tr><td>x402</td><td>5/10</td><td>10/10</td><td>10/10</td></tr>
+    <tr><td>drizzle</td><td>0/10</td><td>10/10</td><td>10/10</td></tr>
+    <tr><td>ponder</td><td>5/10</td><td>10/10</td><td>10/10</td></tr>
+    <tr><td>eip-5792</td><td>6/10</td><td>10/10</td><td>10/10</td></tr>
+  </table>
+
+  <p>A 60 percentage point jump, and the only variable that changed was the grading method.</p>
+
+  <h3>Two things went wrong at once</h3>
+
+  <p><strong>Teaching to the test.</strong> When the executor sees an assertion like "Uses CAIP-2 network format (eip155:84532)" before writing code, it just does that. The assertions become a requirements <del>document, not</del><ins>document rather than</ins> evaluation criteria. It doesn't matter whether Claude "knows" about CAIP-2 from training. Without seeing the assertion, it defaults to whatever API surface it remembers. With the assertion, it has a cheat sheet.</p>
+
+  <p><strong>Self-grading is generous.</strong> An agent that wrote <code>const NETWORK = process.env.X402_NETWORK || 'eip155:84532'</code> marks itself PASS on the CAIP-2 assertion because it <em>intended</em> to satisfy it. A separate grader that just reads the code doesn't care about intent. It checks whether the implementation actually works. The executor gives itself credit for trying.</p>
+
+  <p>There was also a subtler leak. Our <code>AGENTS.md</code> file (always in context) had a Skills &amp; Agents Index listing skill names and one-line descriptions. Even the without_skill agents could see "<code>drizzle-neon</code> - Drizzle ORM, Neon PostgreSQL, database integration" sitting right there. Not the full skill, but a hint. Enough to nudge things.</p>
+
+  <p>The time and token data was still useful though, since grading bias doesn't affect those:</p>
+
+  <table>
+    <tr><th></th><th>With Skills</th><th>Without Skills</th></tr>
+    <tr><td>Avg time</td><td>158s</td><td>214s</td></tr>
+    <tr><td>Avg tokens</td><td>39k</td><td>44k</td></tr>
+  </table>
+
+  <p>26% faster and 10% cheaper, even in the broken methodology.</p>
+
+  <p>The broader point is that if your evaluation lets the agent see the rubric before doing the work, you're measuring instruction-following, not capability.</p>
+
+  <h2>Iteration 3: independent grading</h2>
+
+  <del class="img-del removed-when-final">![image.png](image%201.png)</del>
+
+  <p><del>We fixed everything. Split execution and grading into two separate phases.</del><ins>For iteration 3 we fixed the setup by splitting execution and grading into two separate phases.</ins> The executor gets only the task prompt, no assertions, no hints. A separate grader reads the output files against the assertions. We stripped the skill index from <del><a href="http://AGENTS.md">AGENTS.md</a></del><ins><code>AGENTS.md</code></ins> for baseline runs. Bumped to 5 runs per configuration. 40 total runs, 80 agent invocations.</p>
+
+  <table>
+    <tr><th>Skill</th><th>With Skill (5 runs)</th><th>Without Skill (5 runs)</th><th>Delta</th></tr>
+    <tr><td>drizzle</td><td>100% (10,10,10,10,10)</td><td>10% (1,1,1,1,1)</td><td>+90pp</td></tr>
+    <tr><td>x402</td><td>100% (10,10,10,10,10)</td><td>38% (4,3,2,6,4)</td><td>+62pp</td></tr>
+    <tr><td>eip-5792</td><td>88% (9,8,9,9,9)</td><td>50% (5,5,5,5,5)</td><td>+38pp</td></tr>
+    <tr><td>ponder</td><td>100% (10,10,10,10,10)</td><td>68% (7,7,8,7,5)</td><td>+32pp</td></tr>
+    <tr><td><strong>Overall</strong></td><td><strong>97%</strong></td><td><strong>42%</strong></td><td><strong>+55pp</strong></td></tr>
+  </table>
+
+  <p>What stood out was the consistency. EIP-5792 without skills scored 5/10 in all five runs. Same five assertions pass, same five fail every time. x402 without skills averaged 3.8/10 with tight variance. We ran 5 rounds specifically to get error bars, and the error bars are basically zero. The model's knowledge gaps don't fluctuate between runs.</p>
+
+  <p>With skills: three of four hit 10/10 on every run. EIP-5792 is the only one with variance, consistently missing <code>useShowCallsStatus</code>, which told us the skill file could be clearer about that hook.</p>
+
+  <p>The efficiency difference held up too:</p>
+
+  <table>
+    <tr><th></th><th>With Skills</th><th>Without Skills</th></tr>
+    <tr><td>Avg time</td><td>217s</td><td>365s</td></tr>
+    <tr><td>Avg tokens</td><td>21k</td><td>27k</td></tr>
+  </table>
+
+  <p>40% faster and 21% cheaper. Makes <del>sense since</del><ins>sense, since</ins> the model spends less time searching and guessing when it has the right patterns up front.</p>
+
+  <h3>Why the failures are systematic<del>, not random</del></h3>
+
+  <p>Claude always builds something that works. It creates the contract, sets up the middleware, configures the indexer. The code runs.</p>
+
+  <p>What it misses are things it can't know from training data. The failures break down into two <del>patterns:</del><ins>patterns.</ins></p>
+
+  <p><del><strong>API versioning.</strong></del><ins>The first is <strong>API versioning</strong>.</ins> For rapidly evolving libraries, the model reaches for API shapes from training, which means the wrong version. x402 restructured everything between v1 and v2. Ponder changed its package name, its schema API, and its handler format in v0.7. The model confidently writes code against APIs that no longer exist. This shows up in 5 of 10 x402 assertions and 5 of 10 ponder assertions.</p>
+
+  <p><del><strong>SE-2 integration bridges.</strong> These are conventions</del><ins>The second is <strong>SE-2 integration bridges</strong>, conventions</ins> we designed for the monorepo: reading <code>deployedContracts.ts</code> for contract addresses, using <code>scaffoldConfig</code> for network info, workspace naming (<code>@se-2/ponder</code>), root proxy scripts, environment variable conventions. The model can't know these because we made them up. EIP-5792 is interesting here because Claude knows the standard well technically (6 of 10 assertions pass) but misses the UX layer: fallback behavior for wallets that don't support batching, status display with <code>useShowCallsStatus</code>, defensive disabling of the batch button.</p>
+
+  <p>A skill fills those gaps once, and they stay filled across every run. The gaps are deterministic, so the fix is too.</p>
+
+  <h2>Iteration 4: tier 2 and 3 skills</h2>
+
+  <p>The first three iterations tested tier 1 skills. We still had six more in the repo covering well-established standards like ERC-20 (around since 2015) and Solidity security patterns (in every tutorial). We ran the same methodology on them, 20 runs total.</p>
+
+  <table>
+    <tr><th>Skill</th><th>Tier</th><th>With Skill</th><th>Without Skill</th><th>Delta</th></tr>
+    <tr><td>eip-712</td><td>2</td><td>100%</td><td>80%</td><td>+20pp</td></tr>
+    <tr><td>siwe</td><td>2</td><td>100%</td><td>85%</td><td>+15pp</td></tr>
+    <tr><td>erc-20</td><td>2</td><td>100%</td><td>95%</td><td>+5pp</td></tr>
+    <tr><td>erc-721</td><td>2</td><td>85%</td><td>90%</td><td>-5pp</td></tr>
+    <tr><td>defi-protocol-templates</td><td>3</td><td>100%</td><td>100%</td><td>0pp</td></tr>
+    <tr><td>solidity-security</td><td>3</td><td>90%</td><td>100%</td><td>-10pp</td></tr>
+    <tr><td><strong>Overall</strong></td><td></td><td><strong>96%</strong></td><td><strong>90%</strong></td><td><strong>+6pp</strong></td></tr>
+  </table>
+
+  <p>Compare that to tier 1: 97% vs 42%, +55pp. The model already knows this stuff. EIP-712 and SIWE showed real discriminating value (shared utility module pattern, <code>as const</code> for TypeScript inference, viem SIWE vs the <code>siwe</code> npm package). The rest showed nothing.</p>
+
+  <p>We trimmed them down aggressively. Four skills with delta at or below 5pp<del>:</del><ins> were</ins> removed entirely. <del>EIP-712 and SIWE: cut</del><ins>For EIP-712 and SIWE, we cut</ins> everything the model already <del>knows, kept</del><ins>knows and kept</ins> only the discriminating content. 2,123 lines down to 365. An 83% reduction.</p>
+
+  <del class="img-del removed-when-final">![image.png](image%202.png)</del>
+
+  <h2>Trimming tier 1 skills to prevent context pollution</h2>
+
+  <p>The eval data didn't just help with tier <del>2+3</del><ins>2 and 3</ins>. We went back through every tier 1 skill and mapped each section to a specific assertion. If the content was non-discriminating (the model gets it right without the skill), we cut it.</p>
+
+  <table>
+    <tr><th>Skill</th><th>Before</th><th>After</th><th>Reduction</th></tr>
+    <tr><td>x402</td><td>324 lines</td><td>167</td><td>48%</td></tr>
+    <tr><td>eip-5792</td><td>149</td><td>91</td><td>39%</td></tr>
+    <tr><td>drizzle-neon</td><td>391</td><td>254</td><td>35%</td></tr>
+    <tr><td>ponder</td><td>272</td><td>197</td><td>28%</td></tr>
+    <tr><td>subgraph</td><td>427</td><td>360</td><td>16%</td></tr>
+  </table>
+
+  <p>Every line that survived maps to something the model gets wrong without the skill. Everything else is context tokens spent for zero return.</p>
+
+  <h2>When the eval is wrong, not the skill</h2>
+
+  <p>When we ran iteration 4, the ERC-20 skill showed a +5pp delta and we dismissed it as noise. Then one of our teammates who'd been writing Solidity contracts for years tested it <del>manually and</del><ins>manually, and</ins> the code with the skill was noticeably better. He pointed to specific things: named imports (<code>import {ERC20}</code> instead of <code>import "..."</code>), <ins>the </ins><code>_update</code> override (required for OZ v5 compilation), <code>formatUnits</code> with dynamic decimals from <code>viem</code>.</p>
+
+  <p>None of those were in our assertions. We'd been testing for <code>ERC20Capped</code> usage, deploy scripts, SE-2 hooks, stuff the model already knows. We were measuring the wrong things.</p>
+
+  <p>We re-ran with assertions based on his findings:</p>
+
+  <table>
+    <tr><th>Assertion</th><th>With Skill (3 runs)</th><th>Without Skill (3 runs)</th><th>Delta</th></tr>
+    <tr><td>Named imports (<code>import {ERC20}</code> not <code>import "..."</code>)</td><td>3/3</td><td>0/3</td><td>+100pp</td></tr>
+    <tr><td><code>_update</code> override (required for OZ v5)</td><td>3/3</td><td>0/3</td><td>+100pp</td></tr>
+    <tr><td>ERC20Permit</td><td>0/3</td><td>0/3</td><td>0pp</td></tr>
+    <tr><td>ERC20Capped</td><td>3/3</td><td>3/3</td><td>0pp</td></tr>
+  </table>
+
+  <p>Two assertions <del>with</del><ins>showed</ins> complete separation<del> that</del><ins>, and</ins> our original eval missed <del>entirely</del><ins>both</ins>.</p>
+
+  <p>The reason <del>they were missing </del>is that the agent generating assertions didn't know what good OZ v5 code looks like. It tested for things that are easy to check, not things that matter. Our teammate caught it because he had the <strong>specific knowledge</strong> that comes from years of writing contracts. He knew that named imports and <code>_update</code> overrides are the difference between code that compiles today and code that breaks on the next upgrade.</p>
+
+  <p>You can automate the eval runs, but the question of "what should we even be testing for" still needs someone who's lived with the problem.</p>
+
+  <h2>What we learned</h2>
+
+  <p><ins>A few things held up across every iteration.</ins></p>
+
+  <p><strong>Separate execution from grading</strong><del> -</del><ins>.</ins> Self-grading inflated our scores by <del>60pp</del><ins>60 percentage points</ins>. <del>The executor gets the task prompt and nothing else, a separate grader checks the output.</del><ins>Once the executor got only the task prompt and a separate grader read the output, the numbers became much more believable.</ins></p>
+
+  <p><strong>Clean your context for baseline runs</strong><del> -</del><ins>.</ins> If your repo references the skills anywhere (docs, indexes, <del>AGENTS.md</del><ins><code>AGENTS.md</code></ins>), strip those from the baseline. Our <del>AGENTS.md</del><ins><code>AGENTS.md</code></ins> had a skills index listing skill names and one-line descriptions, and even that was enough to nudge the without-skill agents toward the right tools and patterns.</p>
+
+  <p><strong>Don't trust auto-generated assertions blindly</strong><del> -</del><ins>.</ins> Have someone with specific knowledge of the domain review the actual output. Our automated eval said +5pp on <del>ERC-20,</del><ins>ERC-20;</ins> someone who'd written contracts for years found +100pp on the things that actually matter.</p>
+
+  <p><strong>General guidance doesn't change behavior</strong><del> - For example</del><ins><strong>, concrete patterns do.</strong></ins> "Check the OZ version" made the model check <code>package.json</code>, see v5.0.2, and still write v4 imports. Showing the actual import pattern worked immediately.</p>
+
+  <p><del><strong>Model behaviour differences</strong> - </del><ins><strong>Models read skills differently.</strong> </ins>While testing we also <del>realized</del><ins>noticed</ins> that Opus stops at the first matching skill and doesn't look further. <del>For example, we</del><ins>We</ins> had an OpenZeppelin skill with general v5 patterns and a separate ERC-721 skill with NFT-specific <del>pitfalls. Opus</del><ins>pitfalls, and Opus</ins> would pick up the ERC-721 skill and skip the OZ one entirely, so it missed the v5 import patterns. From what we observed, Opus<ins> 4.6</ins> behaves more like a confident senior dev: it finds something relevant, decides "this is what I need," and runs with it. Sonnet<ins> 4.6</ins> is more methodical about scanning all available skills before starting. Adding a cross-reference in the ERC-721 skill's prerequisites ("read the OpenZeppelin skill first") fixed it for both models.</p>
+
+  <p>The raw evaluation data and all skill files are in the <a href="https://github.com/scaffold-eth/scaffold-eth-2">scaffold-eth-2 repo</a>.</p>
+
+</div>
+
+<script>
+(function () {
+  var buttons = document.querySelectorAll('.toolbar button[data-view]');
+  buttons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.body.className = btn.getAttribute('data-view');
+      buttons.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+})();
+</script>
+</body>
+</html>
