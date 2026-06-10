@@ -222,3 +222,15 @@ You can automate the eval runs, but the question of "what should we even be test
 **Models read skills differently.** While testing we also noticed that Opus stops at the first matching skill and doesn't look further. We had an OpenZeppelin skill with general v5 patterns and a separate ERC-721 skill with NFT-specific pitfalls, and Opus would pick up the ERC-721 skill and skip the OZ one entirely, so it missed the v5 import patterns. From what we observed, Opus 4.6 behaves more like a confident senior dev: it finds something relevant, decides "this is what I need," and runs with it. Sonnet 4.6 is more methodical about scanning all available skills before starting. Adding a cross-reference in the ERC-721 skill's prerequisites ("read the OpenZeppelin skill first") fixed it for both models.
 
 The raw evaluation data and all skill files are in the [scaffold-eth-2 repo](https://github.com/scaffold-eth/scaffold-eth-2).
+
+## If you don’t want to build the eval harness yourself
+
+You can use tools to run the skill evaluations for you. Here are a few good options (as of June 2026):
+
+- [Braintrust](https://www.braintrust.dev/) if you want eval-first workflows: datasets, scorers, experiments, and CI regression gates.
+- [LangSmith](https://www.langchain.com/langsmith/evaluation) if you want the most polished agent tracing and evaluation workflow, especially for LangChain or LangGraph projects.
+- [Langfuse](https://langfuse.com/) if you want an open-source, self-hostable stack for traces, prompts, evals, and human review.
+- [Comet Opik](https://www.comet.com/site/products/opik) if you want open-source observability plus test suites, LLM-as-judge metrics, PyTest integration, and agent optimization.
+
+These tools won’t decide what matters for your skill, but they save you from rebuilding the machinery around datasets, runs, scoring, dashboards, and regression tracking.
+
